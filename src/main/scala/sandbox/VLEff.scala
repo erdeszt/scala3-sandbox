@@ -1,5 +1,7 @@
 package sandbox
 
+// Based on: https://aaronlevin.ca/post/136494428283/extensible-effect-stacks-in-the-van-laarhoven-free
+
 enum CList:
   case CNil() extends CList
   case CCons[C[_[_]], T <: CList]() extends CList
