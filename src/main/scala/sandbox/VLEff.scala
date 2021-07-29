@@ -23,9 +23,17 @@ enum EffectStack[A <: CList, M[_]]:
       stack:  EffectStack[Effects, M]
   ) extends EffectStack[CCons[Effect, Effects], M]
 
-// final case class FreeVL[Effects <: CList, A](runFreeVL: [M[_]] => Monad[M] ?=> EffectStack[Effects, M] => M[A])
-// fmap
-// FreeVL((stack: [M[_]] => Monad[M] ?=> EffectStack[Effects, M]) => summon[Functor[?]].map(f)(fa.runFreeVL(stack)))
+extension [F[_]: Functor, A](fa: F[A])(using functor: Functor[F])
+  def fmap[B](f: A => B): F[B] =
+    functor.map(f)(fa)
+
+// Unfortunately this doesn't work. Can't access M[_] in the callback and stack has the wrong inferred type
+// TODO: Report dotty issue
+// final case class FreeVL2[Effects <: CList, A](runFreeVL: [M[_]] => Monad[M] ?=> EffectStack[Effects, M] => M[A])
+// given freeVL2Functor[Effects <: CList]: Functor[[A] =>> FreeVL2[Effects, A]] with
+//   def map[A, B](f: A => B)(fa: FreeVL2[Effects, A]): FreeVL2[Effects, B] =
+//     // FreeVL2((stack: [M[_]] => Monad[M] ?=> EffectStack[Effects, M]) => fa.runFreeVL(stack).fmap(f))
+//     FreeVL2((stack: [M[_]] => Monad[M] ?=> EffectStack[Effects, M]) => summon[Monad[M]].map(fa.runFreeVL(stack)))
 
 trait FreeVL[Effects <: CList, A]:
   def runFreeVL[M[_]: Monad](stack: EffectStack[Effects, M]): M[A]
