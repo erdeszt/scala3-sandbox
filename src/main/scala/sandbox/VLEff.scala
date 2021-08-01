@@ -1,8 +1,13 @@
 package sandbox
 
 import cats.{Applicative, Functor, Monad}
+import cats.syntax.functor.given
+import cats.syntax.flatMap.given
 import cats.effect.IO
 import cats.effect.IOApp
+
+import CList.*
+import EffectStack.*
 
 // Based on: https://aaronlevin.ca/post/136494428283/extensible-effect-stacks-in-the-van-laarhoven-free
 
@@ -10,8 +15,6 @@ import cats.effect.IOApp
 enum CList:
   case CNil() extends CList
   case CCons[C[_[_]], T <: CList]() extends CList
-
-import CList.*
 
 type test = CCons[Functor, CCons[Monad, CNil]]
 
@@ -22,29 +25,16 @@ enum EffectStack[A <: CList, M[_]]:
       stack:  EffectStack[Effects, M]
   ) extends EffectStack[CCons[Effect, Effects], M]
 
-import EffectStack.*
-
-extension [F[_]: Functor, A](fa: F[A])(using functor: Functor[F])
-  def fmap[B](f: A => B): F[B] =
-    functor.map(fa)(f)
-
 // Unfortunately this doesn't work. Can't access M[_] in the callback and stack has the wrong inferred type
 // TODO: Report dotty issue
 // final case class FreeVL2[Effects <: CList, A](runFreeVL: [M[_]] => Monad[M] ?=> EffectStack[Effects, M] => M[A])
 // given freeVL2Functor[Effects <: CList]: Functor[[A] =>> FreeVL2[Effects, A]] with
 //   def map[A, B](f: A => B)(fa: FreeVL2[Effects, A]): FreeVL2[Effects, B] =
-//     // FreeVL2((stack: [M[_]] => Monad[M] ?=> EffectStack[Effects, M]) => fa.runFreeVL(stack).fmap(f))
+//     // FreeVL2((stack: [M[_]] => Monad[M] ?=> EffectStack[Effects, M]) => fa.runFreeVL(stack).map(f))
 //     FreeVL2((stack: [M[_]] => Monad[M] ?=> EffectStack[Effects, M]) => summon[Monad[M]].map(fa.runFreeVL(stack)))
 
 trait FreeVL[Effects <: CList, A]:
   def runFreeVL[M[_]: Monad](stack: EffectStack[Effects, M]): M[A]
-
-extension [Effects <: CList, A](free: FreeVL[Effects, A])(using monad: Monad[[T] =>> FreeVL[Effects, T]])
-  def map[B](f: A => B): FreeVL[Effects, B] =
-    monad.map(free)(f)
-
-  def flatMap[B](f: A => FreeVL[Effects, B]): FreeVL[Effects, B] =
-    monad.flatMap(free)(f)
 
 given freeVLFunctor[Effects <: CList]: Functor[[A] =>> FreeVL[Effects, A]] with
   def map[A, B](fa: FreeVL[Effects, A])(f: A => B): FreeVL[Effects, B] =
