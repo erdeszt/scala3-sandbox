@@ -138,10 +138,10 @@ def getRand[Effects <: CList](using effect: HasEffect[Effects, Random]): FreeVL[
       eff.getRandEff
   })
 
-def repeatReq[Effects <: CList](url: String)(using
-    http:                            HasEffect[Effects, Http],
-    logging:                         HasEffect[Effects, Logging],
-    random:                          HasEffect[Effects, Random]
+def exampleProgram[Effects <: CList](url: String)(using
+    http:                                 HasEffect[Effects, Http],
+    logging:                              HasEffect[Effects, Logging],
+    random:                               HasEffect[Effects, Random]
 ): FreeVL[Effects, Unit] =
   for
     numRetries <- getRand
@@ -174,4 +174,4 @@ def vleff(): Unit =
   println("YOYOYO")
 
 object FreeVLApp extends IOApp.Simple:
-  val run = interpret[IO, MyEffects, Unit](ioInterpreter)(repeatReq("foobar"))
+  val run = interpret[IO, MyEffects, Unit](ioInterpreter)(exampleProgram("foobar"))
