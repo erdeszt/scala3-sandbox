@@ -16,8 +16,6 @@ enum CList:
   case CNil() extends CList
   case CCons[C[_[_]], T <: CList]() extends CList
 
-type test = CCons[Functor, CCons[Monad, CNil]]
-
 enum EffectStack[A <: CList, M[_]]:
   case EmptyEffect[M[_]]() extends EffectStack[CNil, M]
   case ConsEffect[Effect[_[_]], Effects <: CList, M[_]](
@@ -49,9 +47,14 @@ given freeVLApplicative[Effects <: CList](using
     new FreeVL[Effects, A]:
       def runFreeVL[M[_]: Monad](stack: EffectStack[Effects, M]): M[A] =
         summon[Monad[M]].pure(a)
-  // TODO
   def ap[A, B](ff: FreeVL[Effects, A => B])(fa: FreeVL[Effects, A]): FreeVL[Effects, B] =
-    ???
+    new FreeVL[Effects, B]:
+      def runFreeVL[M[_]: Monad](stack: EffectStack[Effects, M]): M[B] =
+        summon[Monad[M]].flatMap(ff.runFreeVL(stack)) { (f: A => B) =>
+          summon[Monad[M]].map(fa.runFreeVL(stack)) { (a: A) =>
+            f(a)
+          }
+        }
 
 given freeVLMonad[Effects <: CList](using
     applicative: Applicative[[A] =>> FreeVL[Effects, A]]
