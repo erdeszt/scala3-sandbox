@@ -3,15 +3,14 @@ package sandbox
 import cats.{Applicative, Functor, Monad}
 import cats.syntax.functor.given
 import cats.syntax.flatMap.given
-import cats.effect.IO
-import cats.effect.IOApp
+import cats.effect.{IO, IOApp}
 
 import CList.*
 import EffectStack.*
 
 // Based on: https://aaronlevin.ca/post/136494428283/extensible-effect-stacks-in-the-van-laarhoven-free
 
-/* Type leve list of types that take type constructors as arguments.
+/* Type level list of types that take type constructors as arguments.
  * For example: CCons[Functor, CCons[Applicative,
  * CCons[Monad, CNil]]]
  */
