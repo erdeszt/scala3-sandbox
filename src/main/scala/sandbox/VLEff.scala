@@ -121,7 +121,7 @@ def postHttp[Effects <: CList](url: String, body: String)(using
 def log[Effects <: CList](message: String)(using effect: HasEffect[Effects, Logging]): FreeVL[Effects, Unit] =
   liftVL[Effects, Logging](eff => eff.logEff(message))
 
-def getRand[Effects <: CList](using effect: HasEffect[Effects, Random]): FreeVL[Effects, Unit] =
+def getRand[Effects <: CList](using effect: HasEffect[Effects, Random]): FreeVL[Effects, Int] =
   liftVL[Effects, Random](eff => eff.getRandEff)
 
 def repeatReq[Effects <: CList](url: String)(using
@@ -136,31 +136,28 @@ def repeatReq[Effects <: CList](url: String)(using
     _ <- log(s"Response: ${response}")
   yield ()
 
-val httpIO = new Http[IO]:
+object HttpIO extends Http[IO]:
   def getHttpEff(url: String): IO[Either[String, String]] =
     IO.pure(Right(s"You called: ${url}, it's a success"))
   def postHttpEff(url: String, body: String): IO[Either[String, String]] =
     IO.pure(Left(s"Call to: ${url} failed"))
 
-val logIO = new Logging[IO]:
+object LogIO extends Logging[IO]:
   def logEff(message: String): IO[Unit] =
     IO(println(s"[LOG] ${message}"))
 
-val randomIO = new Random[IO]:
+object RandomIO extends Random[IO]:
   def getRandEff: IO[Int] =
     IO.pure(4)
 
 type MyEffects = CCons[Http, CCons[Logging, CCons[Random, CNil]]]
 
 val ioInterpreter: EffectStack[MyEffects, IO] =
-  ConsEffect(httpIO, ConsEffect(logIO, ConsEffect(randomIO, EmptyEffect[IO]())))
+  ConsEffect(HttpIO, ConsEffect(LogIO, ConsEffect(RandomIO, EmptyEffect[IO]())))
 
 @main
 def vleff(): Unit =
   println("YOYOYO")
 
 object FreeVLApp extends IOApp.Simple:
-  val run = for {
-    _ <- IO(println("YOPPPU"))
-    _ <- interpret[IO, MyEffects, Unit](ioInterpreter)(repeatReq("foobar"))
-  } yield ()
+  val run = interpret[IO, MyEffects, Unit](ioInterpreter)(repeatReq("foobar"))
