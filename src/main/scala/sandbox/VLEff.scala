@@ -91,12 +91,14 @@ given hasEffectThere[Effects <: CList, OtherEffect[_[_]], Effect[_[_]]](using
 def liftVL[Effects <: CList, Effect[_[_]]]: LiftVLApply[Effects, Effect] =
   LiftVLApply[Effects, Effect]()
 
-// If N & M are different then this can go very wrong
 class LiftVLApply[Effects <: CList, Effect[_[_]]]():
-  def apply[M[_], A](f: Effect[M] => M[A])(using effect: HasEffect[Effects, Effect]): FreeVL[Effects, A] =
+  def apply[A](f: Lifted[Effects, Effect, A])(using effect: HasEffect[Effects, Effect]): FreeVL[Effects, A] =
     new FreeVL[Effects, A]:
-      def runFreeVL[N[_]: Monad](stack: EffectStack[Effects, N]): N[A] =
-        f(effect.getEffect[N](stack).asInstanceOf[Effect[M]]).asInstanceOf[N[A]]
+      def runFreeVL[M[_]: Monad](stack: EffectStack[Effects, M]): M[A] =
+        f(effect.getEffect(stack))
+
+trait Lifted[Effects <: CList, Effect[_[_]], A]:
+  def apply[M[_]](eff: Effect[M]): M[A]
 
 trait Http[M[_]]:
   def getHttpEff(url:  String): M[Either[String, String]]
@@ -111,18 +113,30 @@ trait Random[M[_]]:
 def getHttp[Effects <: CList](url: String)(using
     effect:                        HasEffect[Effects, Http]
 ): FreeVL[Effects, Either[String, String]] =
-  liftVL[Effects, Http](eff => eff.getHttpEff(url))
+  liftVL(new Lifted[Effects, Http, Either[String, String]] {
+    def apply[M[_]](eff: Http[M]): M[Either[String, String]] =
+      eff.getHttpEff(url)
+  })
 
 def postHttp[Effects <: CList](url: String, body: String)(using
     effect:                         HasEffect[Effects, Http]
 ): FreeVL[Effects, Either[String, String]] =
-  liftVL[Effects, Http](eff => eff.postHttpEff(url, body))
+  liftVL(new Lifted[Effects, Http, Either[String, String]] {
+    def apply[M[_]](eff: Http[M]): M[Either[String, String]] =
+      eff.postHttpEff(url, body)
+  })
 
 def log[Effects <: CList](message: String)(using effect: HasEffect[Effects, Logging]): FreeVL[Effects, Unit] =
-  liftVL[Effects, Logging](eff => eff.logEff(message))
+  liftVL(new Lifted[Effects, Logging, Unit] {
+    def apply[M[_]](eff: Logging[M]): M[Unit] =
+      eff.logEff(message)
+  })
 
 def getRand[Effects <: CList](using effect: HasEffect[Effects, Random]): FreeVL[Effects, Int] =
-  liftVL[Effects, Random](eff => eff.getRandEff)
+  liftVL(new Lifted[Effects, Random, Int] {
+    def apply[M[_]](eff: Random[M]): M[Int] =
+      eff.getRandEff
+  })
 
 def repeatReq[Effects <: CList](url: String)(using
     http:                            HasEffect[Effects, Http],
