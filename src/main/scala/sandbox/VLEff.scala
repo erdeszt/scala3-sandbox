@@ -92,7 +92,8 @@ trait HasEffect[Effects <: CList, Effect[_[_]]]:
  */
 given hasEffectHere[Effects <: CList, Effect[_[_]]]: HasEffect[CCons[Effect, Effects], Effect] with
   def getEffect[M[_]](stack: EffectStack[CCons[Effect, Effects], M]): Effect[M] =
-    stack.asInstanceOf[ConsEffect[Effect, Effects, M]].effect
+    stack match
+      case ConsEffect(effect, _) => effect
 
 /* The top of the stack is NOT the effect we are looking for but we have
  * evidence that the tail contains it.
@@ -101,7 +102,8 @@ given hasEffectThere[Effects <: CList, OtherEffect[_[_]], Effect[_[_]]](using
     there: HasEffect[Effects, Effect]
 ): HasEffect[CCons[OtherEffect, Effects], Effect] with
   def getEffect[M[_]](stack: EffectStack[CCons[OtherEffect, Effects], M]): Effect[M] =
-    there.getEffect(stack.asInstanceOf[ConsEffect[OtherEffect, Effects, M]].stack)
+    stack match
+      case ConsEffect(_, tail) => there.getEffect(tail)
 
 /* Lift an operation into the correct place in the effect stack
  */

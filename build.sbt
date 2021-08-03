@@ -14,5 +14,5 @@ lazy val root = project
       "org.scalatest" %% "scalatest-funspec" % scalatestVersion % Test,
       "org.scalatest" %% "scalatest-freespec" % scalatestVersion % Test
     ),
-    scalacOptions ++= Seq("-Ykind-projector")
+    scalacOptions ++= Seq("-Ykind-projector", "-Wall")
   )
