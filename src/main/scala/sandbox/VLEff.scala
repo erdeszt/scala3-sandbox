@@ -18,7 +18,7 @@ enum CList:
   case CNil() extends CList
   case CCons[C[_[_]], T <: CList]() extends CList
 
-/* List of effects that our program can use .
+/* List of effects that our program can use.
  * Indexed by the list of effects and the underlyig monad
  */
 enum EffectStack[A <: CList, M[_]]:
